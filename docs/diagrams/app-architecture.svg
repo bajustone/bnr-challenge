@@ -1,0 +1,176 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1280 880" font-family="ui-sans-serif, -apple-system, 'Segoe UI', system-ui, sans-serif">
+  <defs>
+    <style>
+      .bg { fill: #0f1115; }
+      .panel { fill: #161922; stroke: #262a36; stroke-width: 1; }
+      .panel2 { fill: #1c2030; stroke: #262a36; stroke-width: 1; }
+      .accent { fill: #d97757; }
+      .accent2 { fill: #e5b181; }
+      .good { fill: #8ec07c; }
+      .muted { fill: #8a8e99; }
+      .fg { fill: #e6e3da; }
+      .pill { fill: #2b2233; stroke: #3a2f44; stroke-width: 1; }
+      .pill-good { fill: #1f3326; stroke: #2f5238; stroke-width: 1; }
+      .pill-warn { fill: #3a2f1a; stroke: #5c4924; stroke-width: 1; }
+      .heading { font-family: ui-sans-serif, system-ui, sans-serif; font-weight: 600; fill: #f5f1e6; }
+      .label { font-family: ui-sans-serif, system-ui, sans-serif; fill: #e6e3da; }
+      .mono { font-family: ui-monospace, 'JetBrains Mono', Menlo, monospace; fill: #cfd0c8; }
+      .arrow { stroke: #5f6675; stroke-width: 1.5; fill: none; }
+      .arrow-accent { stroke: #d97757; stroke-width: 1.8; fill: none; }
+      .arrow-good { stroke: #8ec07c; stroke-width: 1.5; fill: none; }
+    </style>
+    <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#5f6675"/>
+    </marker>
+    <marker id="arrow-accent" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#d97757"/>
+    </marker>
+    <marker id="arrow-good" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#8ec07c"/>
+    </marker>
+  </defs>
+
+  <rect class="bg" width="1280" height="880"/>
+
+  <!-- Title -->
+  <text x="40" y="48" class="heading" font-size="24">BNR Licensing Portal — application architecture</text>
+  <text x="40" y="70" class="muted" font-size="13">Request flow: client → middleware chain → routes → services → repositories → Postgres + on-disk blobs.</text>
+
+  <!-- ── Client ── -->
+  <rect class="panel" x="40" y="100" width="280" height="80" rx="10"/>
+  <text x="60" y="128" class="heading" font-size="15">Client</text>
+  <text x="60" y="150" class="label" font-size="12">Browser / curl / Scalar (/docs)</text>
+  <text x="60" y="168" class="mono" font-size="11">fetch(..., credentials: 'include')</text>
+
+  <!-- ── Edge: CORS + logger ── -->
+  <rect class="panel" x="380" y="100" width="280" height="80" rx="10"/>
+  <text x="400" y="128" class="heading" font-size="15">Edge middleware</text>
+  <text x="400" y="150" class="mono" font-size="11">cors(ALLOWED_ORIGINS, credentials)</text>
+  <text x="400" y="168" class="mono" font-size="11">requestLogger → x-request-id</text>
+
+  <!-- ── Auth catch-all ── -->
+  <rect class="panel" x="720" y="100" width="520" height="80" rx="10"/>
+  <text x="740" y="128" class="heading" font-size="15">/auth/* — better-auth + documented wrappers</text>
+  <text x="740" y="150" class="mono" font-size="11">POST sign-up/email · sign-in/email · sign-out · GET get-session</text>
+  <text x="740" y="168" class="mono" font-size="11">argon2id (Bun) / scrypt (Node) · HttpOnly Set-Cookie · applicant auto-grant</text>
+
+  <!-- ── Session + role load -->
+  <rect class="panel2" x="40" y="220" width="1200" height="70" rx="10"/>
+  <text x="60" y="246" class="heading" font-size="14">Per-router auth chain  →  sessionMiddleware  →  requireAuth (401)  →  loadRoles (one indexed SELECT)  →  requireRole(...)  (403)</text>
+  <text x="60" y="268" class="muted" font-size="11">403 fires before 404 — NotFoundError only after the actor is authorised to know the resource exists.</text>
+
+  <!-- ── Domain routers ── -->
+  <g>
+    <rect class="panel" x="40" y="320" width="220" height="120" rx="10"/>
+    <text x="60" y="346" class="heading" font-size="14">/me</text>
+    <text x="60" y="368" class="mono" font-size="11">user + roles</text>
+
+    <rect class="panel" x="280" y="320" width="240" height="120" rx="10"/>
+    <text x="300" y="346" class="heading" font-size="14">/applications</text>
+    <text x="300" y="368" class="mono" font-size="11">CRUD + /transitions</text>
+    <text x="300" y="386" class="mono" font-size="11">/:id/history</text>
+    <text x="300" y="404" class="mono" font-size="11">/:id/notes</text>
+    <text x="300" y="422" class="mono" font-size="11">/:id/documents</text>
+
+    <rect class="panel" x="540" y="320" width="220" height="120" rx="10"/>
+    <text x="560" y="346" class="heading" font-size="14">/documents</text>
+    <text x="560" y="368" class="mono" font-size="11">GET /:id (metadata)</text>
+    <text x="560" y="386" class="mono" font-size="11">GET /:id/content</text>
+    <text x="560" y="404" class="muted" font-size="11">streams from disk</text>
+
+    <rect class="panel" x="780" y="320" width="220" height="120" rx="10"/>
+    <text x="800" y="346" class="heading" font-size="14">/admin</text>
+    <text x="800" y="368" class="mono" font-size="11">users + roles grants</text>
+    <text x="800" y="386" class="mono" font-size="11">/audit · /audit/verify</text>
+
+    <rect class="panel" x="1020" y="320" width="220" height="120" rx="10"/>
+    <text x="1040" y="346" class="heading" font-size="14">/openapi.json · /docs</text>
+    <text x="1040" y="368" class="mono" font-size="11">describeRoute(Zod)</text>
+    <text x="1040" y="386" class="mono" font-size="11">cookieAuth scheme</text>
+    <text x="1040" y="404" class="muted" font-size="11">Scalar from CDN</text>
+  </g>
+
+  <!-- ── Services layer ── -->
+  <rect class="panel2" x="40" y="475" width="1200" height="100" rx="10"/>
+  <text x="60" y="500" class="heading" font-size="14">Services (tx-scoped) — one transaction per mutation, one audit row in the same tx</text>
+  <g font-size="12">
+    <rect class="pill" x="60" y="515" width="180" height="32" rx="16"/>
+    <text x="150" y="536" text-anchor="middle" class="fg">applications.service</text>
+    <rect class="pill" x="255" y="515" width="180" height="32" rx="16"/>
+    <text x="345" y="536" text-anchor="middle" class="fg">documents.service</text>
+    <rect class="pill" x="450" y="515" width="180" height="32" rx="16"/>
+    <text x="540" y="536" text-anchor="middle" class="fg">review-notes.service</text>
+    <rect class="pill" x="645" y="515" width="180" height="32" rx="16"/>
+    <text x="735" y="536" text-anchor="middle" class="fg">admin.service</text>
+    <rect class="pill-good" x="840" y="515" width="380" height="32" rx="16"/>
+    <text x="1030" y="536" text-anchor="middle" class="fg">state-machine (shared, pure)</text>
+  </g>
+
+  <!-- ── Repositories ── -->
+  <rect class="panel2" x="40" y="610" width="1200" height="90" rx="10"/>
+  <text x="60" y="635" class="heading" font-size="14">Repositories — the only place drizzle-orm is imported; factories closed over a pool or tx</text>
+  <g font-size="11">
+    <rect class="pill" x="60" y="650" width="120" height="30" rx="15"/>
+    <text x="120" y="670" text-anchor="middle" class="fg">users</text>
+    <rect class="pill" x="200" y="650" width="120" height="30" rx="15"/>
+    <text x="260" y="670" text-anchor="middle" class="fg">user-roles</text>
+    <rect class="pill" x="340" y="650" width="160" height="30" rx="15"/>
+    <text x="420" y="670" text-anchor="middle" class="fg">applications</text>
+    <rect class="pill" x="520" y="650" width="160" height="30" rx="15"/>
+    <text x="600" y="670" text-anchor="middle" class="fg">documents</text>
+    <rect class="pill" x="700" y="650" width="160" height="30" rx="15"/>
+    <text x="780" y="670" text-anchor="middle" class="fg">document-blobs</text>
+    <rect class="pill" x="880" y="650" width="160" height="30" rx="15"/>
+    <text x="960" y="670" text-anchor="middle" class="fg">review-notes</text>
+    <rect class="pill-warn" x="1060" y="650" width="160" height="30" rx="15"/>
+    <text x="1140" y="670" text-anchor="middle" class="fg">audit (append-only)</text>
+  </g>
+
+  <!-- ── Persistence ── -->
+  <rect class="panel" x="40" y="735" width="580" height="120" rx="10"/>
+  <text x="60" y="762" class="heading" font-size="14">Postgres  (app_user + app_owner roles)</text>
+  <text x="60" y="785" class="mono" font-size="11">drizzle-orm/postgres-js · DATABASE_URL = app_user (no UPDATE/DELETE on audit_log)</text>
+  <text x="60" y="805" class="mono" font-size="11">migrations: pre/extensions → drizzle → post/{roles,grants,triggers}</text>
+  <text x="60" y="825" class="mono" font-size="11">audit_log hash chain: prev_hash · row_hash · sha256(prev || canonical_json || pepper)</text>
+
+  <rect class="panel" x="640" y="735" width="600" height="120" rx="10"/>
+  <text x="660" y="762" class="heading" font-size="14">$STORAGE_DIR  (named docker volume bnr_storage)</text>
+  <text x="660" y="785" class="mono" font-size="11">tmp/&lt;uuid&gt;.part   in-flight; atomic rename(2) on success</text>
+  <text x="660" y="805" class="mono" font-size="11">&lt;ab&gt;/&lt;sha256&gt;     content-addressed; dedup on document_blobs PK</text>
+  <text x="660" y="825" class="mono" font-size="11">5 MiB cap: bodyLimit · Transform stream meter · CHECK constraint</text>
+
+  <!-- Arrows -->
+  <path class="arrow" d="M 320 140 H 376" marker-end="url(#arrow)"/>
+  <path class="arrow" d="M 660 140 H 716" marker-end="url(#arrow)"/>
+
+  <!-- Edge → auth chain -->
+  <path class="arrow" d="M 520 180 V 218" marker-end="url(#arrow)"/>
+  <path class="arrow" d="M 980 180 V 218" marker-end="url(#arrow)"/>
+
+  <!-- Auth chain → routers -->
+  <path class="arrow" d="M 150 290 V 318" marker-end="url(#arrow)"/>
+  <path class="arrow" d="M 400 290 V 318" marker-end="url(#arrow)"/>
+  <path class="arrow" d="M 650 290 V 318" marker-end="url(#arrow)"/>
+  <path class="arrow" d="M 890 290 V 318" marker-end="url(#arrow)"/>
+  <path class="arrow" d="M 1130 290 V 318" marker-end="url(#arrow)"/>
+
+  <!-- Routers → services -->
+  <path class="arrow-accent" d="M 400 440 V 473" marker-end="url(#arrow-accent)"/>
+  <path class="arrow-accent" d="M 650 440 V 473" marker-end="url(#arrow-accent)"/>
+  <path class="arrow-accent" d="M 890 440 V 473" marker-end="url(#arrow-accent)"/>
+
+  <!-- Services → repos -->
+  <path class="arrow" d="M 640 575 V 608" marker-end="url(#arrow)"/>
+
+  <!-- Repos → DB/storage -->
+  <path class="arrow" d="M 420 700 V 733" marker-end="url(#arrow)"/>
+  <path class="arrow" d="M 780 700 V 733" marker-end="url(#arrow)"/>
+
+  <!-- Legend -->
+  <g transform="translate(40, 870)">
+    <text class="muted" font-size="10">Solid: dependency direction</text>
+    <text class="muted" font-size="10" x="220">Orange: state-mutating path (writes audit in same tx)</text>
+    <text class="muted" font-size="10" x="660">Warn pill: append-only · Good pill: pure</text>
+  </g>
+</svg>

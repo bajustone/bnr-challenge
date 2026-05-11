@@ -1,0 +1,241 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1400 940" font-family="ui-sans-serif, -apple-system, 'Segoe UI', system-ui, sans-serif">
+  <defs>
+    <style>
+      .bg { fill: #0f1115; }
+      .table { fill: #161922; stroke: #262a36; stroke-width: 1; }
+      .table-id { fill: #1c2030; stroke: #262a36; stroke-width: 1; }
+      .accent { fill: #d97757; }
+      .accent2 { fill: #e5b181; }
+      .good { fill: #8ec07c; }
+      .warn { fill: #e6b450; }
+      .bad { fill: #f07178; }
+      .muted { fill: #8a8e99; }
+      .fg { fill: #e6e3da; }
+      .key { fill: #ffd28a; font-weight: 600; }
+      .header { font-family: ui-sans-serif, system-ui, sans-serif; font-weight: 600; fill: #f5f1e6; }
+      .col { font-family: ui-monospace, 'JetBrains Mono', Menlo, monospace; fill: #cfd0c8; font-size: 11px; }
+      .label { font-family: ui-sans-serif, system-ui, sans-serif; fill: #e6e3da; font-size: 12px; }
+      .note { font-family: ui-sans-serif, system-ui, sans-serif; fill: #8a8e99; font-size: 11px; }
+      .fk { stroke: #5f6675; stroke-width: 1.4; fill: none; }
+      .fk-accent { stroke: #d97757; stroke-width: 1.6; fill: none; }
+      .invariant { fill: #1a1822; stroke: #d97757; stroke-width: 1; }
+    </style>
+    <marker id="fk-arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#5f6675"/>
+    </marker>
+    <marker id="fk-accent-arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#d97757"/>
+    </marker>
+  </defs>
+
+  <rect class="bg" width="1400" height="940"/>
+
+  <text x="40" y="44" class="header" font-size="22">BNR Licensing Portal — database schema</text>
+  <text x="40" y="66" class="note" font-size="13">Identity (better-auth) · Workflow (state machine) · Documents (content-addressed) · Append-only audit (grants + trigger + hash chain).</text>
+
+  <!-- ─────────── Identity column ─────────── -->
+  <g transform="translate(40, 100)">
+    <text class="header" font-size="13" x="0" y="-8">IDENTITY  (better-auth)</text>
+
+    <!-- users -->
+    <rect class="table" x="0" y="0" width="280" height="200" rx="8"/>
+    <rect class="table-id" x="0" y="0" width="280" height="34" rx="8"/>
+    <text x="14" y="22" class="header" font-size="14">users</text>
+    <text x="14" y="52" class="col"><tspan class="key">id</tspan>  uuid  PK</text>
+    <text x="14" y="70" class="col">name  text</text>
+    <text x="14" y="88" class="col">email  citext  UNIQUE</text>
+    <text x="14" y="106" class="col">email_verified  bool</text>
+    <text x="14" y="124" class="col">created_at  timestamptz</text>
+    <text x="14" y="142" class="col">updated_at  timestamptz</text>
+    <text x="14" y="160" class="col">disabled_at  timestamptz  NULL</text>
+    <text x="14" y="184" class="note">soft-disable; audit_log keeps id forever</text>
+
+    <!-- sessions -->
+    <rect class="table" x="0" y="225" width="280" height="120" rx="8"/>
+    <rect class="table-id" x="0" y="225" width="280" height="28" rx="8"/>
+    <text x="14" y="245" class="header" font-size="13">sessions</text>
+    <text x="14" y="270" class="col"><tspan class="key">id</tspan>  uuid  PK</text>
+    <text x="14" y="288" class="col">user_id  uuid → users</text>
+    <text x="14" y="306" class="col">token  text  UNIQUE</text>
+    <text x="14" y="324" class="col">expires_at  timestamptz</text>
+
+    <!-- accounts -->
+    <rect class="table" x="0" y="370" width="280" height="120" rx="8"/>
+    <rect class="table-id" x="0" y="370" width="280" height="28" rx="8"/>
+    <text x="14" y="390" class="header" font-size="13">accounts</text>
+    <text x="14" y="415" class="col"><tspan class="key">id</tspan>  uuid  PK</text>
+    <text x="14" y="433" class="col">user_id  uuid → users</text>
+    <text x="14" y="451" class="col">provider_id, account_id</text>
+    <text x="14" y="469" class="col">password  text  (argon2id/scrypt)</text>
+
+    <!-- verifications -->
+    <rect class="table" x="0" y="515" width="280" height="90" rx="8"/>
+    <rect class="table-id" x="0" y="515" width="280" height="28" rx="8"/>
+    <text x="14" y="535" class="header" font-size="13">verifications</text>
+    <text x="14" y="560" class="col"><tspan class="key">id</tspan>  uuid  PK</text>
+    <text x="14" y="578" class="col">identifier, value, expires_at</text>
+
+    <!-- user_roles -->
+    <rect class="table" x="0" y="635" width="280" height="130" rx="8"/>
+    <rect class="table-id" x="0" y="635" width="280" height="28" rx="8"/>
+    <text x="14" y="655" class="header" font-size="13">user_roles</text>
+    <text x="14" y="680" class="col"><tspan class="key">PK (user_id, role)</tspan></text>
+    <text x="14" y="698" class="col">user_id  uuid → users  RESTRICT</text>
+    <text x="14" y="716" class="col">role  app_role</text>
+    <text x="14" y="734" class="col">granted_by  uuid → users</text>
+    <text x="14" y="752" class="col">granted_at  timestamptz</text>
+  </g>
+
+  <!-- ─────────── Workflow column ─────────── -->
+  <g transform="translate(420, 100)">
+    <text class="header" font-size="13" x="0" y="-8">WORKFLOW</text>
+
+    <!-- applications -->
+    <rect class="table" x="0" y="0" width="380" height="380" rx="8"/>
+    <rect class="table-id" x="0" y="0" width="380" height="34" rx="8"/>
+    <text x="14" y="22" class="header" font-size="14">applications</text>
+    <text x="14" y="52" class="col"><tspan class="key">id</tspan>  uuid  PK</text>
+    <text x="14" y="70" class="col">applicant_id  uuid → users  RESTRICT</text>
+    <text x="14" y="88" class="col">institution_name, institution_type, payload</text>
+    <text x="14" y="106" class="col">status  application_status</text>
+    <text x="14" y="124" class="col" font-weight="bold"><tspan class="accent2">version  integer  ← optimistic lock</tspan></text>
+    <text x="14" y="146" class="col">submitted_at  timestamptz</text>
+    <text x="14" y="164" class="col">reviewed_by  uuid → users  · reviewed_at</text>
+    <text x="14" y="182" class="col">decided_by  uuid → users  · decided_at</text>
+    <text x="14" y="200" class="col">decision  decision_kind  · decision_reason</text>
+    <text x="14" y="218" class="col">created_at, updated_at</text>
+
+    <rect class="invariant" x="14" y="240" width="352" height="120" rx="6"/>
+    <text x="22" y="262" class="label" font-weight="bold">Invariants</text>
+    <text x="22" y="282" class="col">chk_dual_control  decided_by ≠ reviewed_by</text>
+    <text x="22" y="300" class="col">chk_terminal_complete  APPROVED|REJECTED ⇒ decision set</text>
+    <text x="22" y="318" class="col">chk_decision_matches  decision = status (terminal)</text>
+    <text x="22" y="336" class="col">trigger_no_terminal_update  APPROVED|REJECTED|WITHDRAWN frozen</text>
+    <text x="22" y="354" class="col">partial idx idx_applications_status WHERE status NOT IN terminal</text>
+
+    <!-- review_notes -->
+    <rect class="table" x="0" y="405" width="380" height="220" rx="8"/>
+    <rect class="table-id" x="0" y="405" width="380" height="34" rx="8"/>
+    <text x="14" y="427" class="header" font-size="14">review_notes</text>
+    <text x="14" y="458" class="col"><tspan class="key">id</tspan>  uuid  PK</text>
+    <text x="14" y="476" class="col">application_id  uuid → applications  RESTRICT</text>
+    <text x="14" y="494" class="col">author_id  uuid → users</text>
+    <text x="14" y="512" class="col">author_role  app_role  (snapshot)</text>
+    <text x="14" y="530" class="col">visibility  text  ('staff' | 'applicant')</text>
+    <text x="14" y="548" class="col">body  text  (1..10000)</text>
+    <text x="14" y="566" class="col">created_at  timestamptz</text>
+
+    <rect class="invariant" x="14" y="580" width="352" height="40" rx="6"/>
+    <text x="22" y="600" class="col">append-only via grant: SELECT, INSERT only on app_user</text>
+    <text x="22" y="614" class="col">request_info transition writes a visibility='applicant' note</text>
+  </g>
+
+  <!-- ─────────── Documents column ─────────── -->
+  <g transform="translate(840, 100)">
+    <text class="header" font-size="13" x="0" y="-8">DOCUMENTS</text>
+
+    <!-- documents -->
+    <rect class="table" x="0" y="0" width="280" height="280" rx="8"/>
+    <rect class="table-id" x="0" y="0" width="280" height="34" rx="8"/>
+    <text x="14" y="22" class="header" font-size="14">documents</text>
+    <text x="14" y="52" class="col"><tspan class="key">id</tspan>  uuid  PK</text>
+    <text x="14" y="70" class="col">application_id → applications RESTRICT</text>
+    <text x="14" y="88" class="col">slot  text  · version  integer</text>
+    <text x="14" y="106" class="col">filename, mime_type, size_bytes</text>
+    <text x="14" y="124" class="col">content_sha256 → document_blobs</text>
+    <text x="14" y="142" class="col">uploaded_by → users  · uploaded_at</text>
+    <text x="14" y="160" class="col">superseded_at  timestamptz  NULL</text>
+
+    <rect class="invariant" x="14" y="180" width="252" height="92" rx="6"/>
+    <text x="22" y="200" class="label" font-weight="bold">Invariants</text>
+    <text x="22" y="218" class="col">UNIQUE (application_id, slot, version)</text>
+    <text x="22" y="234" class="col">size_bytes ∈ (0, 5 MiB]  CHECK</text>
+    <text x="22" y="250" class="col">idx_documents_current_slot WHERE</text>
+    <text x="22" y="264" class="col">  superseded_at IS NULL</text>
+
+    <!-- document_blobs -->
+    <rect class="table" x="0" y="305" width="280" height="180" rx="8"/>
+    <rect class="table-id" x="0" y="305" width="280" height="34" rx="8"/>
+    <text x="14" y="327" class="header" font-size="14">document_blobs</text>
+    <text x="14" y="357" class="col"><tspan class="key">sha256</tspan>  bytea  PK</text>
+    <text x="14" y="375" class="col">size_bytes  integer</text>
+    <text x="14" y="393" class="col">storage_path  text  (&lt;ab&gt;/&lt;sha&gt;)</text>
+    <text x="14" y="411" class="col">first_seen_at  timestamptz</text>
+    <rect class="invariant" x="14" y="425" width="252" height="50" rx="6"/>
+    <text x="22" y="443" class="col">content-addressed dedup</text>
+    <text x="22" y="459" class="col">size_bytes ∈ (0, 5 MiB]  CHECK</text>
+  </g>
+
+  <!-- ─────────── Audit column ─────────── -->
+  <g transform="translate(1140, 100)">
+    <text class="header" font-size="13" x="0" y="-8">AUDIT</text>
+    <rect class="table" x="0" y="0" width="240" height="500" rx="8"/>
+    <rect class="table-id" x="0" y="0" width="240" height="34" rx="8"/>
+    <text x="14" y="22" class="header" font-size="14">audit_log</text>
+    <text x="14" y="52" class="col"><tspan class="key">id</tspan>  bigserial  PK</text>
+    <text x="14" y="70" class="col">occurred_at  timestamptz</text>
+    <text x="14" y="88" class="col">actor_id  uuid → users</text>
+    <text x="14" y="106" class="col">actor_role  app_role</text>
+    <text x="14" y="124" class="col">action  text</text>
+    <text x="14" y="142" class="col">resource_type, resource_id</text>
+    <text x="14" y="160" class="col">before_state  jsonb</text>
+    <text x="14" y="178" class="col">after_state  jsonb</text>
+    <text x="14" y="196" class="col">metadata  jsonb</text>
+    <text x="14" y="214" class="col" font-weight="bold"><tspan class="accent2">prev_hash  bytea</tspan></text>
+    <text x="14" y="232" class="col" font-weight="bold"><tspan class="accent2">row_hash   bytea</tspan></text>
+
+    <rect class="invariant" x="14" y="252" width="212" height="234" rx="6"/>
+    <text x="22" y="272" class="label" font-weight="bold">Append-only — three defences</text>
+    <text x="22" y="292" class="col">1. grant: app_user gets</text>
+    <text x="22" y="306" class="col">   SELECT, INSERT only</text>
+    <text x="22" y="326" class="col">2. trigger: BEFORE</text>
+    <text x="22" y="340" class="col">   UPDATE|DELETE|TRUNCATE</text>
+    <text x="22" y="354" class="col">   → RAISE EXCEPTION</text>
+    <text x="22" y="374" class="col">3. hash chain:</text>
+    <text x="22" y="388" class="col">   row_hash = sha256(</text>
+    <text x="22" y="402" class="col">     prev_hash ||</text>
+    <text x="22" y="416" class="col">     canonical_json(row) ||</text>
+    <text x="22" y="430" class="col">     AUDIT_HASH_SECRET)</text>
+    <text x="22" y="450" class="col">verifier: GET</text>
+    <text x="22" y="464" class="col">/admin/audit/verify</text>
+    <text x="22" y="478" class="col">→ firstBadId on tamper</text>
+  </g>
+
+  <!-- ─────────── Foreign-key arrows ─────────── -->
+  <!-- sessions → users -->
+  <path class="fk" d="M 280 295 H 320 V 100 H 320" marker-end="url(#fk-arrow)"/>
+  <!-- accounts → users -->
+  <path class="fk" d="M 280 440 H 340 V 130 H 320" marker-end="url(#fk-arrow)"/>
+  <!-- user_roles → users (user_id) -->
+  <path class="fk" d="M 280 720 H 360 V 150 H 320" marker-end="url(#fk-arrow)"/>
+  <!-- user_roles → users (granted_by) -->
+  <path class="fk" d="M 280 755 H 380 V 170 H 320" marker-end="url(#fk-arrow)"/>
+  <!-- applications → users (applicant) -->
+  <path class="fk" d="M 420 170 H 380 V 110 H 320" marker-end="url(#fk-arrow)"/>
+  <!-- applications → users (reviewed_by/decided_by) -->
+  <path class="fk" d="M 420 264 H 400 V 130 H 320" marker-end="url(#fk-arrow)"/>
+  <!-- review_notes → applications -->
+  <path class="fk-accent" d="M 420 575 H 405 V 260 H 420" marker-end="url(#fk-accent-arrow)"/>
+  <!-- review_notes → users -->
+  <path class="fk" d="M 420 590 H 405 V 120 H 320" marker-end="url(#fk-arrow)"/>
+  <!-- documents → applications -->
+  <path class="fk-accent" d="M 840 170 H 800" marker-end="url(#fk-accent-arrow)"/>
+  <!-- documents → document_blobs -->
+  <path class="fk" d="M 980 280 V 305" marker-end="url(#fk-arrow)"/>
+  <!-- documents → users -->
+  <path class="fk" d="M 840 242 H 820 V 140 H 320" marker-end="url(#fk-arrow)"/>
+  <!-- audit_log → users -->
+  <path class="fk" d="M 1140 188 H 1120 V 160 H 320" marker-end="url(#fk-arrow)"/>
+
+  <!-- ─────────── Legend ─────────── -->
+  <g transform="translate(40, 855)">
+    <rect x="0" y="0" width="1320" height="56" rx="8" class="table"/>
+    <text x="16" y="22" class="header" font-size="13">Legend</text>
+    <text x="16" y="44" class="note">→ FK (RESTRICT keeps audit references intact)</text>
+    <text x="280" y="44" class="note">Orange FK: workflow-critical attribution</text>
+    <text x="570" y="44" class="note">Orange box: invariant / constraint</text>
+    <text x="800" y="44" class="note">Bold key column = optimistic-lock / hash-chain</text>
+    <text x="1120" y="44" class="note">Roles: applicant · reviewer · approver · admin</text>
+  </g>
+</svg>
