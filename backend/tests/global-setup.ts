@@ -1,21 +1,14 @@
 /**
- * Global setup: one Postgres testcontainer for the whole suite.
- *
- *   - starts postgres:16-alpine
- *   - runs migrate.ts (pre/ → drizzle → post/) as the superuser
- *   - publishes the connection URL to tests via vitest's `inject()`
- *
- * The same URL is published for both DATABASE_URL and DATABASE_OWNER_URL.
- * Tests don't exercise the app_user / app_owner grant boundary — the
- * production-only grants in post/0002 still get applied, so any test that
- * connects as `app_user` would observe the real GRANT shape. Tests today
- * use the superuser URL for convenience.
- *
- * Container start + image pull on first run is slow; vitest.config.ts
- * raises hookTimeout to 120s to accommodate.
+ * One Postgres testcontainer for the whole suite: starts the image, runs
+ * migrate.ts as the superuser, exposes the URL via `inject('databaseUrl')`
+ * and process.env so tests can import modules that read env at load time.
+ * Tests connect as the container's superuser — the app_user grant boundary
+ * is a production concern.
  */
 
 import { spawnSync } from 'node:child_process';
+import { mkdtempSync } from 'node:fs';
+import os from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -38,8 +31,7 @@ export default async function setup({ provide }: TestProject) {
 
   const url = container.getConnectionUri();
 
-  // Run migrations via Bun so the .ts extensions in migrate.ts resolve.
-  // We pass the URL through env because env.ts reads process.env at import.
+  // Spawn under Bun so migrate.ts's .ts imports resolve.
   const result = spawnSync('bun', ['run', 'src/db/migrate.ts'], {
     cwd: BACKEND_DIR,
     env: {
@@ -57,6 +49,18 @@ export default async function setup({ provide }: TestProject) {
   }
 
   provide('databaseUrl', url);
+
+  // Workers inherit env (pool: 'forks', singleFork: true) — set before any
+  // test file imports env.ts / db/index.ts.
+  process.env.DATABASE_URL = url;
+  process.env.DATABASE_OWNER_URL = url;
+  process.env.NODE_ENV = 'test';
+  if (!process.env.LOG_LEVEL && process.env.BNR_DEBUG_TESTS === '1') {
+    process.env.LOG_LEVEL = 'debug';
+  }
+  process.env.AUDIT_HASH_SECRET = 'test-audit-secret-not-for-production';
+  process.env.STORAGE_DIR =
+    process.env.STORAGE_DIR ?? mkdtempSync(path.join(os.tmpdir(), 'bnr-storage-'));
 
   return async () => {
     await container?.stop();
