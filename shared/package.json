@@ -5,7 +5,8 @@
   "type": "module",
   "exports": {
     ".": "./src/index.ts",
-    "./domain/institution-type": "./src/domain/institution-type.ts"
+    "./domain/institution-type": "./src/domain/institution-type.ts",
+    "./domain/state-machine": "./src/domain/state-machine.ts"
   },
   "dependencies": {
     "zod": "^4.4.3"
