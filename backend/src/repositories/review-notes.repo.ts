@@ -1,11 +1,7 @@
 /**
- * Review-notes repository. Two methods only: `listForApplication` and
- * `create`. Append-only by design — no update / delete / supersede here,
- * matching the SELECT, INSERT-only grant on app_user.
- *
- * Visibility filtering is intentionally a caller-supplied option, not a
- * caller role. Route handlers know the viewer's roles and translate them
- * to the right visibility set; the repo stays policy-free.
+ * Append-only — no update / delete / supersede here, matching the
+ * SELECT, INSERT-only grant on app_user. Visibility is a caller-supplied
+ * filter, not a role; policy lives in the service.
  */
 
 import { and, asc, eq, inArray } from 'drizzle-orm';
@@ -48,7 +44,7 @@ export function makeReviewNotesRepo(h: DbOrTx) {
         .orderBy(asc(reviewNotes.createdAt));
     },
 
-    /** CHECK constraints in the schema reject empty / overlong bodies. */
+    /** Body length CHECK is at the DB; service validates earlier for a friendly 422. */
     async create(input: CreateReviewNoteInput): Promise<ReviewNote> {
       const [row] = await h.insert(reviewNotes).values(input).returning();
       if (!row) throw new Error('review_notes insert returned no row');
