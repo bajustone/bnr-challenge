@@ -85,6 +85,47 @@ Zero rows → 409 with `"refresh and retry"`. The audit insert uses `SELECT ... 
 
 Content-addressed by sha256, one slot per document type, 5 MiB cap enforced in three places (body-limit middleware, streaming counter, DB `CHECK`). Re-uploads supersede rather than delete.
 
+## How the brief's non-negotiables are met
+
+### 1. Auth & authorisation
+
+- **Sessions, not JWT.** Server-side sessions in Postgres via better-auth. Revocable instantly (delete the row), no token-rotation choreography, HttpOnly cookies mean no XSS exfiltration. JWT only wins when you have to verify offline across services — that's not this system.
+- **Four roles**: `applicant` (own applications), `reviewer` (review, request info, mark ready), `approver` (approve/reject), `admin` (roles + audit). Boundaries drawn around the workflow's actual hand-offs.
+- **Backend enforcement.** Per-route middleware chain: `requireAuth → loadRoles → requireRole → requireVisibility → Zod`. The frontend uses the same state-machine function only to hide buttons; bypassing it still hits the same checks.
+- **Reviewer ≠ approver.** Enforced in three places: the state machine refuses, a service guard refuses, and a Postgres `CHECK (decided_by IS NULL OR decided_by <> reviewed_by)` refuses. Belt, braces, and a second belt.
+
+### 2. Workflow & state integrity
+
+- **State machine** in `shared/src/domain/state-machine.ts` — pure function, exhaustive on event tags. Same module on both sides.
+- **Illegal transitions → 409** at the API, never silently coerced. The service maps to `IllegalTransitionError`; `onError` returns `{ error: 'illegal_transition', from, event }`.
+- **Final decisions are permanent.** Terminal states are sinks in the SM, and a `BEFORE UPDATE` trigger on `applications` blocks any column change (except `updated_at`) when `OLD.status IN ('APPROVED','REJECTED','WITHDRAWN')`.
+- **Concurrent access.** Optimistic locking with a predicated `UPDATE … WHERE id = ? AND version = ? AND status = ?`. Zero rows → 409. Covered by `concurrent-transition.test.ts`: two `Promise.all`'d `mark_ready` calls produce exactly one 200, one 409, and one audit row.
+
+### 3. Audit trail
+
+- **Append-only**, enforced by three independent layers (grants, trigger, hash chain — see above). Even `app_owner` cannot UPDATE or DELETE without removing the trigger first, which itself would be visible.
+- **Every row records** actor, action, timestamp, `before_state`, `after_state` (canonical-JSON full snapshots, not diffs — so a replay can reconstruct a deletion).
+- **Legal-grade.** `GET /admin/audit/verify` walks the chain and returns `{ ok, lastVerifiedId, firstBadId, rowsChecked }`. Tampering with any column flips `row_hash`; truncation flips `prev_hash`. The pepper (`AUDIT_HASH_SECRET`) means the chain can't be silently rebuilt by anyone without it.
+
+### 4. Documents
+
+- **Upload + simulated storage.** Multipart upload streams to `$STORAGE_DIR/<sha[0:2]>/<sha>`. Metadata (name, size, MIME, uploader, timestamp, version) lives in `documents`; the file row lives in `document_blobs` keyed by sha256.
+- **5 MiB cap, server-side**, enforced in three places: Hono body-limit middleware (cheap rejection on Content-Length), streaming byte counter (catches a lying client), DB `CHECK (size_bytes <= 5*1024*1024)` (last line).
+- **Versioning.** One slot per document type; re-uploads supersede rather than delete (`superseded_at = now()` on the old row, new row at `version + 1`). Old versions stay accessible via `?include=all`.
+
+### 5. API
+
+- **Consistent error envelope**, mapped centrally in `onError`. No stack traces in responses — those go to logs only.
+- **403, not 404, on unauthorised reads.** Middleware order enforces it: auth (401) → policy (403) → existence (404 only when the caller is authorised to know).
+- **Documented.** OpenAPI generated inline from the same Zod schemas that validate. Scalar at <http://localhost:3001/docs>.
+- **Reproducible seed.** `bun run db:seed` inserts one user per role, applications across the non-terminal states, and one audit row per seeded transition. No manual DB setup.
+
+### 6. Frontend
+
+- **Role-aware UI.** The shared state-machine function decides which actions render — the UI literally cannot show a button the backend would reject.
+- **Loading / error / empty states.** SvelteKit `load` provides loading boundaries; errors map from the backend envelope to inline `<Alert>` or toast; empty lists render a deliberate empty state, not a blank panel.
+- **Honest about scope.** The login gate and scaffolding are in place; the full reviewer/approver views are the next iteration. The API at `/docs` exercises every workflow end-to-end today.
+
 ## Trade-offs
 
 - **Conscious omissions.** S3 storage (swap `backend/src/storage/index.ts`), OAuth/MFA (better-auth supports both), per-test DB isolation (currently one shared testcontainer, serial), PII redaction in audit snapshots.
