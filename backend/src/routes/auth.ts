@@ -48,8 +48,9 @@ authRoutes.post(
   describeRoute({
     summary: 'Create an account (email + password)',
     description:
-      'Hashes the password with argon2id (Bun) or scrypt (Node fallback), creates the user + credential account, and returns the new user. Does not auto-sign-in — the client must POST /auth/sign-in/email next.',
+      'Hashes the password with argon2id (Bun) or scrypt (Node fallback), creates the user + credential account with the `applicant` role, and returns the new user. Does not auto-sign-in — the client must POST /auth/sign-in/email next.',
     tags: ['auth'],
+    security: [],
     requestBody: {
       required: true,
       content: {
@@ -84,6 +85,7 @@ authRoutes.post(
     description:
       'On success sets an HttpOnly, SameSite=Lax session cookie. The frontend should rely on the browser cookie store — never read the token from JS.',
     tags: ['auth'],
+    security: [],
     requestBody: {
       required: true,
       content: {
@@ -135,6 +137,7 @@ authRoutes.get(
     description:
       'Returns null when there is no session. Mirrors what GET /me exposes but without the role lookup — cheaper for "am I signed in?" gating in the UI shell.',
     tags: ['auth'],
+    security: [],
     responses: {
       200: {
         description: 'Session or null',

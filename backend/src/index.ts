@@ -4,6 +4,7 @@
  */
 
 import { Hono } from 'hono';
+import { cors } from 'hono/cors';
 import { ZodError } from 'zod';
 import { describeRoute, openAPIRouteHandler, resolver } from 'hono-openapi';
 import { z } from 'zod';
@@ -42,6 +43,20 @@ export const app = new Hono<{ Variables: Vars }>();
 
 app.use('*', requestLogger);
 
+// CORS: credentialed (cookie-bearing) requests from the configured origins.
+// Frontend MUST send `credentials: 'include'` for the session cookie to ride.
+app.use(
+  '*',
+  cors({
+    origin: env.ALLOWED_ORIGINS,
+    credentials: true,
+    allowMethods: ['GET', 'POST', 'PATCH', 'DELETE', 'OPTIONS'],
+    allowHeaders: ['Content-Type', 'Authorization', 'x-request-id'],
+    exposeHeaders: ['x-request-id'],
+    maxAge: 600,
+  }),
+);
+
 // Documented wrappers first — the more-specific routes take precedence,
 // any other /auth/* path falls through to better-auth.
 app.route('/auth', authRoutes);
@@ -52,6 +67,7 @@ app.get(
   describeRoute({
     summary: 'Service identity',
     tags: ['meta'],
+    security: [],
     responses: {
       200: {
         description: 'Identity payload',
@@ -67,6 +83,7 @@ app.get(
   describeRoute({
     summary: 'Liveness',
     tags: ['meta'],
+    security: [],
     responses: {
       200: {
         description: 'Live',
@@ -102,6 +119,22 @@ app.get(
         { name: 'review-notes', description: 'Reviewer commentary + RFI messages' },
         { name: 'admin', description: 'Role grants + audit verification' },
       ],
+      components: {
+        securitySchemes: {
+          // Cookie set by POST /auth/sign-in/email; sent automatically by
+          // browsers when fetch uses `credentials: 'include'`.
+          cookieAuth: {
+            type: 'apiKey',
+            in: 'cookie',
+            name: 'better-auth.session_token',
+            description:
+              'HttpOnly session cookie issued by /auth/sign-in/email. Sent automatically by the browser.',
+          },
+        },
+      },
+      // Default — every route requires the session cookie unless it sets
+      // `security: []` to opt out (sign-up, sign-in, health, identity, docs).
+      security: [{ cookieAuth: [] }],
       servers: [{ url: 'http://localhost:3001', description: 'Local dev' }],
     },
   }),

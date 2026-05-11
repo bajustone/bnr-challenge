@@ -22,6 +22,11 @@ const EnvSchema = z.object({
   STORAGE_DIR: z.string().min(1).default('./storage'),
   /** Hard ceiling on individual document size (bytes). 5 MiB per brief. */
   MAX_DOCUMENT_BYTES: z.coerce.number().int().positive().default(5 * 1024 * 1024),
+  /** Comma-separated CORS origins permitted to send credentialed requests. */
+  ALLOWED_ORIGINS: z
+    .string()
+    .default('http://localhost:5173,http://localhost:3001')
+    .transform((s) => s.split(',').map((o) => o.trim()).filter(Boolean)),
 });
 
 export type Env = z.infer<typeof EnvSchema>;

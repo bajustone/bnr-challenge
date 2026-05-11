@@ -15,14 +15,27 @@ function uniqEmail() {
 }
 
 describe('GET /openapi.json', () => {
-  it('documents the explicit auth endpoints', async () => {
+  it('documents the explicit auth endpoints + cookie security scheme', async () => {
     const res = await appFetch('/openapi.json');
     expect(res.status).toBe(200);
-    const spec = (await res.json()) as { paths: Record<string, Record<string, unknown>> };
+    const spec = (await res.json()) as {
+      paths: Record<string, Record<string, { security?: unknown[] }>>;
+      components?: { securitySchemes?: Record<string, { type?: string; in?: string }> };
+      security?: unknown[];
+    };
     expect(spec.paths['/auth/sign-up/email']?.post).toBeDefined();
     expect(spec.paths['/auth/sign-in/email']?.post).toBeDefined();
     expect(spec.paths['/auth/sign-out']?.post).toBeDefined();
     expect(spec.paths['/auth/get-session']?.get).toBeDefined();
+
+    // Security scheme declared and applied globally.
+    expect(spec.components?.securitySchemes?.cookieAuth?.type).toBe('apiKey');
+    expect(spec.components?.securitySchemes?.cookieAuth?.in).toBe('cookie');
+    expect(spec.security).toEqual([{ cookieAuth: [] }]);
+
+    // Public endpoints opt out via `security: []`.
+    expect(spec.paths['/auth/sign-in/email']?.post?.security).toEqual([]);
+    expect(spec.paths['/health']?.get?.security).toEqual([]);
   });
 });
 
@@ -49,7 +62,8 @@ describe('end-to-end sign-up → sign-in → /me → sign-out', () => {
     expect(me.status).toBe(200);
     const meBody = (await me.json()) as { user: { email: string }; roles: string[] };
     expect(meBody.user.email.toLowerCase()).toBe(email.toLowerCase());
-    expect(meBody.roles).toEqual([]); // no roles granted yet
+    // Self sign-up auto-grants the `applicant` role; staff roles need an admin.
+    expect(meBody.roles).toEqual(['applicant']);
 
     const signOut = await appFetch('/auth/sign-out', { method: 'POST', headers: { cookie } });
     expect(signOut.status).toBe(200);
