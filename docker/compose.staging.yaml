@@ -1,0 +1,6 @@
+# Staging overlay. Empty for now.
+#
+# Once populated: docker secrets, no published Postgres port, pinned image
+# digests, backend + frontend services running non-root with read-only FS.
+
+services: {}

@@ -1,0 +1,22 @@
+# Base compose. Overlays (dev / staging / prod) supply credentials, ports,
+# and source mounts. Credentials are intentionally NOT defined here so a
+# missing overlay fails loudly instead of starting Postgres with defaults.
+
+name: bnr
+
+services:
+  postgres:
+    image: postgres:17-alpine
+    restart: unless-stopped
+    volumes:
+      - pg_data:/var/lib/postgresql/data
+    healthcheck:
+      # `$$` escapes compose interpolation so the shell expands at runtime.
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+      start_period: 5s
+
+volumes:
+  pg_data:

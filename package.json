@@ -1,0 +1,21 @@
+{
+  "name": "bnr",
+  "private": true,
+  "version": "0.0.1",
+  "description": "Bank Licensing & Compliance Portal — monolith (Bun + Hono backend, SvelteKit frontend).",
+  "scripts": {
+    "dev": "bun run --filter '*' dev",
+    "dev:backend": "bun --cwd=backend run dev",
+    "dev:frontend": "bun --cwd=frontend run dev",
+    "build": "bun --cwd=frontend run build",
+    "test": "bun --cwd=backend run test",
+    "typecheck": "bun --cwd=backend run typecheck && bun --cwd=frontend run check",
+    "docker:dev": "docker compose -f docker/compose.yaml -f docker/compose.dev.yaml up -d",
+    "docker:dev:down": "docker compose -f docker/compose.yaml -f docker/compose.dev.yaml down",
+    "docker:staging": "docker compose -f docker/compose.yaml -f docker/compose.staging.yaml up -d",
+    "docker:staging:down": "docker compose -f docker/compose.yaml -f docker/compose.staging.yaml down",
+    "docker:prod": "docker compose -f docker/compose.yaml -f docker/compose.prod.yaml up -d",
+    "docker:prod:down": "docker compose -f docker/compose.yaml -f docker/compose.prod.yaml down"
+  },
+  "workspaces": ["backend", "frontend", "shared"]
+}

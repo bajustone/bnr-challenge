@@ -1,0 +1,6 @@
+# Production overlay. Empty for now.
+#
+# Once populated: secrets manager, no published port, WAL/PITR or managed
+# Postgres, pinned digests, restart: always, reverse proxy with TLS in front.
+
+services: {}
