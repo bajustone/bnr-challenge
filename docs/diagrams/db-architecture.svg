@@ -2,30 +2,30 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1400 940" font-family="ui-sans-serif, -apple-system, 'Segoe UI', system-ui, sans-serif">
   <defs>
     <style>
-      .bg { fill: #0f1115; }
-      .table { fill: #161922; stroke: #262a36; stroke-width: 1; }
-      .table-id { fill: #1c2030; stroke: #262a36; stroke-width: 1; }
-      .accent { fill: #d97757; }
-      .accent2 { fill: #e5b181; }
-      .good { fill: #8ec07c; }
-      .warn { fill: #e6b450; }
-      .bad { fill: #f07178; }
-      .muted { fill: #8a8e99; }
-      .fg { fill: #e6e3da; }
-      .key { fill: #ffd28a; font-weight: 600; }
-      .header { font-family: ui-sans-serif, system-ui, sans-serif; font-weight: 600; fill: #f5f1e6; }
-      .col { font-family: ui-monospace, 'JetBrains Mono', Menlo, monospace; fill: #cfd0c8; font-size: 11px; }
-      .label { font-family: ui-sans-serif, system-ui, sans-serif; fill: #e6e3da; font-size: 12px; }
-      .note { font-family: ui-sans-serif, system-ui, sans-serif; fill: #8a8e99; font-size: 11px; }
-      .fk { stroke: #5f6675; stroke-width: 1.4; fill: none; }
-      .fk-accent { stroke: #d97757; stroke-width: 1.6; fill: none; }
-      .invariant { fill: #1a1822; stroke: #d97757; stroke-width: 1; }
+      .bg { fill: #fafaf6; }
+      .table { fill: #ffffff; stroke: #d4d0c4; stroke-width: 1; }
+      .table-id { fill: #f3efe6; stroke: #d4d0c4; stroke-width: 1; }
+      .accent { fill: #c25a36; }
+      .accent2 { fill: #b85c3b; }
+      .good { fill: #4a7c4f; }
+      .warn { fill: #b88a30; }
+      .bad { fill: #c54a4a; }
+      .muted { fill: #6b6660; }
+      .fg { fill: #2d2a24; }
+      .key { fill: #b85c3b; font-weight: 600; }
+      .header { font-family: ui-sans-serif, system-ui, sans-serif; font-weight: 600; fill: #1f1d18; }
+      .col { font-family: ui-monospace, 'JetBrains Mono', Menlo, monospace; fill: #4a463e; font-size: 11px; }
+      .label { font-family: ui-sans-serif, system-ui, sans-serif; fill: #2d2a24; font-size: 12px; }
+      .note { font-family: ui-sans-serif, system-ui, sans-serif; fill: #6b6660; font-size: 11px; }
+      .fk { stroke: #8a857c; stroke-width: 1.4; fill: none; }
+      .fk-accent { stroke: #c25a36; stroke-width: 1.6; fill: none; }
+      .invariant { fill: #fff5ec; stroke: #c25a36; stroke-width: 1; }
     </style>
     <marker id="fk-arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto">
-      <path d="M 0 0 L 10 5 L 0 10 z" fill="#5f6675"/>
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#8a857c"/>
     </marker>
     <marker id="fk-accent-arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto">
-      <path d="M 0 0 L 10 5 L 0 10 z" fill="#d97757"/>
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#c25a36"/>
     </marker>
   </defs>
 

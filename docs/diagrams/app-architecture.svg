@@ -2,32 +2,32 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1280 880" font-family="ui-sans-serif, -apple-system, 'Segoe UI', system-ui, sans-serif">
   <defs>
     <style>
-      .bg { fill: #0f1115; }
-      .panel { fill: #161922; stroke: #262a36; stroke-width: 1; }
-      .panel2 { fill: #1c2030; stroke: #262a36; stroke-width: 1; }
-      .accent { fill: #d97757; }
-      .accent2 { fill: #e5b181; }
-      .good { fill: #8ec07c; }
-      .muted { fill: #8a8e99; }
-      .fg { fill: #e6e3da; }
-      .pill { fill: #2b2233; stroke: #3a2f44; stroke-width: 1; }
-      .pill-good { fill: #1f3326; stroke: #2f5238; stroke-width: 1; }
-      .pill-warn { fill: #3a2f1a; stroke: #5c4924; stroke-width: 1; }
-      .heading { font-family: ui-sans-serif, system-ui, sans-serif; font-weight: 600; fill: #f5f1e6; }
-      .label { font-family: ui-sans-serif, system-ui, sans-serif; fill: #e6e3da; }
-      .mono { font-family: ui-monospace, 'JetBrains Mono', Menlo, monospace; fill: #cfd0c8; }
-      .arrow { stroke: #5f6675; stroke-width: 1.5; fill: none; }
-      .arrow-accent { stroke: #d97757; stroke-width: 1.8; fill: none; }
-      .arrow-good { stroke: #8ec07c; stroke-width: 1.5; fill: none; }
+      .bg { fill: #fafaf6; }
+      .panel { fill: #ffffff; stroke: #d4d0c4; stroke-width: 1; }
+      .panel2 { fill: #f3efe6; stroke: #d4d0c4; stroke-width: 1; }
+      .accent { fill: #c25a36; }
+      .accent2 { fill: #b85c3b; }
+      .good { fill: #4a7c4f; }
+      .muted { fill: #6b6660; }
+      .fg { fill: #2d2a24; }
+      .pill { fill: #f3edff; stroke: #c3b6e0; stroke-width: 1; }
+      .pill-good { fill: #e9f3e6; stroke: #93b893; stroke-width: 1; }
+      .pill-warn { fill: #fbf1d8; stroke: #d6b86b; stroke-width: 1; }
+      .heading { font-family: ui-sans-serif, system-ui, sans-serif; font-weight: 600; fill: #1f1d18; }
+      .label { font-family: ui-sans-serif, system-ui, sans-serif; fill: #2d2a24; }
+      .mono { font-family: ui-monospace, 'JetBrains Mono', Menlo, monospace; fill: #4a463e; }
+      .arrow { stroke: #8a857c; stroke-width: 1.5; fill: none; }
+      .arrow-accent { stroke: #c25a36; stroke-width: 1.8; fill: none; }
+      .arrow-good { stroke: #4a7c4f; stroke-width: 1.5; fill: none; }
     </style>
     <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto">
-      <path d="M 0 0 L 10 5 L 0 10 z" fill="#5f6675"/>
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#8a857c"/>
     </marker>
     <marker id="arrow-accent" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto">
-      <path d="M 0 0 L 10 5 L 0 10 z" fill="#d97757"/>
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#c25a36"/>
     </marker>
     <marker id="arrow-good" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto">
-      <path d="M 0 0 L 10 5 L 0 10 z" fill="#8ec07c"/>
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#4a7c4f"/>
     </marker>
   </defs>
 
