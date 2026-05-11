@@ -14,14 +14,22 @@ Licensing portal for the National Bank of Rwanda. Applicants submit, reviewers r
 
 ```bash
 bun install
-bun docker:dev               # postgres :5432, backend :3001
-bun --cwd frontend dev       # http://localhost:5173
+bun run dev                  # backend :3001 + frontend :5173, logs interleaved
 ```
+
+First run takes 30–60s while the backend container installs deps, runs migrations and seeds. Wait for `bnr-backend listening` in the logs before hitting the API.
 
 - API docs (Scalar): <http://localhost:3001/docs>
 - Frontend: <http://localhost:5173>
 
-Stop with `bun docker:dev:down` (add `-v` to wipe data).
+Stop with `Ctrl-C`, then `bun docker:dev:down` to remove the postgres + backend containers (add `-v` to wipe data).
+
+### Alternate workflow — detach the stack, watch only the frontend
+
+```bash
+bun docker:dev               # postgres :5432, backend :3001 (detached)
+bun --cwd frontend dev       # http://localhost:5173
+```
 
 ## Dev credentials
 
