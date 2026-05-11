@@ -253,3 +253,24 @@ export function listLegalEdges(): readonly EdgeRule[] {
 export function isTerminal(status: ApplicationStatus): status is TerminalStatus {
   return (TERMINAL_STATUSES as readonly string[]).includes(status);
 }
+
+/**
+ * Most-privileged role for audit attribution when no edge applies
+ * (reads, downloads, etc.). Deterministic; `roles[0]` is not.
+ * Order: admin > approver > reviewer > applicant. Falls back to
+ * 'applicant' on an empty list, which is the least-privileged state.
+ */
+const ROLE_PRIORITY: readonly Role[] = ['applicant', 'reviewer', 'approver', 'admin'];
+
+export function dominantRole(roles: readonly Role[]): Role {
+  let best: Role = 'applicant';
+  let bestIdx = -1;
+  for (const r of roles) {
+    const idx = ROLE_PRIORITY.indexOf(r);
+    if (idx > bestIdx) {
+      bestIdx = idx;
+      best = r;
+    }
+  }
+  return best;
+}

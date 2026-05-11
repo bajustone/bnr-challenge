@@ -12,6 +12,7 @@ import { desc, sql } from 'drizzle-orm';
 import { env } from '../env.ts';
 import { auditLog } from './schema.ts';
 import type { NewAuditLogRow } from './schema.ts';
+import type { db } from './index.ts';
 
 export const GENESIS_PREV_HASH = new Uint8Array(32);
 
@@ -28,8 +29,14 @@ type AuditEventInput = {
   metadata?: Record<string, unknown>;
 };
 
-// Drizzle's tx type is awkward to name; we only use .select/.insert.
-type Tx = any; // eslint-disable-line @typescript-eslint/no-explicit-any
+// Drizzle's transaction callback parameter type, pulled out via Parameters<>.
+// Same trick repositories/types.ts uses; kept inline to avoid a db → repositories
+// → db type cycle. Accept either the pool handle or a tx — the caller is
+// expected to pass a tx (the FOR UPDATE on the chain tail is only meaningful
+// inside one), but the looser type matches the repo wrapper's signature.
+type DbHandle = typeof db;
+type TxParam = Parameters<Parameters<DbHandle['transaction']>[0]>[0];
+type Tx = DbHandle | TxParam;
 
 /**
  * Canonical JSON: sorted keys, no whitespace. Writer and verifier MUST

@@ -29,7 +29,7 @@ import {
   makeStorageLayout,
   type StorageLayout,
 } from '../storage/index.ts';
-import type { Role } from 'bnr-shared';
+import { dominantRole, type Role } from 'bnr-shared';
 import type { Document, DocumentBlob } from '../db/schema.ts';
 
 export type Actor = {
@@ -254,7 +254,7 @@ export async function openDownload(actor: Actor, documentId: string): Promise<Do
 
     await repos.audit.append({
       actorId: actor.id,
-      actorRole: actor.roles[0] ?? 'applicant',
+      actorRole: dominantRole(actor.roles),
       action: 'document.downloaded',
       resourceType: 'document',
       resourceId: doc.id,
