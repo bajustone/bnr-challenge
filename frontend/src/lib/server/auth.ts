@@ -1,4 +1,5 @@
 import type { Cookies } from '@sveltejs/kit';
+import type { Role } from 'bnr-shared/domain/state-machine';
 import { BACKEND_URL } from './backend.ts';
 
 export type AuthUser = {
@@ -92,6 +93,27 @@ export async function fetchSession(
 	if (!res.ok) return null;
 	const body = (await res.json()) as SessionPayload | null;
 	return body ?? null;
+}
+
+/**
+ * Roles for the current session. `/me` is the canonical source — better-auth's
+ * /auth/get-session doesn't know about our role grants. Called in parallel
+ * with fetchSession from hooks; returns `[]` on any failure so the gate
+ * fails closed (no roles → no admin access).
+ */
+export async function fetchRoles(cookieHeader: string, origin: string): Promise<Role[]> {
+	if (!cookieHeader) return [];
+	let res: Response;
+	try {
+		res = await fetch(`${BACKEND_URL}/me`, {
+			headers: authHeaders(origin, { cookie: cookieHeader })
+		});
+	} catch {
+		return [];
+	}
+	if (!res.ok) return [];
+	const body = (await res.json()) as { roles?: Role[] };
+	return body.roles ?? [];
 }
 
 export type SignInResult =
