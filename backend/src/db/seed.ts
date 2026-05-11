@@ -71,12 +71,17 @@ async function main(): Promise<void> {
   // Domain rows in one tx: a half-applied seed would be worse than none.
   await db.transaction(async (tx) => {
     // admin self-grants admin-role; granted_by NOT NULL otherwise needs a synthetic actor.
-    await tx.insert(schema.userRoles).values([
-      { userId: ids.admin, role: "admin", grantedBy: ids.admin },
-      { userId: ids.applicant, role: "applicant", grantedBy: ids.admin },
-      { userId: ids.reviewer, role: "reviewer", grantedBy: ids.admin },
-      { userId: ids.approver, role: "approver", grantedBy: ids.admin },
-    ]);
+    // onConflictDoNothing: better-auth's `applicant` auto-grant hook fires on signUp
+    // and already inserted (id, 'applicant', id) for each user.
+    await tx
+      .insert(schema.userRoles)
+      .values([
+        { userId: ids.admin, role: "admin", grantedBy: ids.admin },
+        { userId: ids.applicant, role: "applicant", grantedBy: ids.admin },
+        { userId: ids.reviewer, role: "reviewer", grantedBy: ids.admin },
+        { userId: ids.approver, role: "approver", grantedBy: ids.admin },
+      ])
+      .onConflictDoNothing();
 
     // version = state-transition count: DRAFT=0, SUBMITTED=1, ..., terminal=4.
     const now = new Date();
