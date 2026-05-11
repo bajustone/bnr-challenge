@@ -61,6 +61,11 @@ The rule: every state-mutating service runs inside `db.transaction(...)` and wri
 
 `DRAFT → SUBMITTED → UNDER_REVIEW → READY_FOR_DECISION → APPROVED | REJECTED`, with `RFI_REQUESTED` as the clarification loop and `WITHDRAWN` as the applicant escape hatch. Approve/reject refuse when `actor.id === reviewedBy` (dual control). A pure function in `shared/` that both sides import.
 
+Two deliberate quirks worth calling out:
+
+- **`admin` is a break-glass role.** When the edge's role list doesn't match any of the actor's roles, `pickActorRole` falls back to `admin` if the actor holds it. So an admin can perform any transition, but dual control still applies — an admin who reviewed an application cannot then approve it.
+- **`READY_FOR_DECISION` has no `request_info` exit.** Once an approver has the application, the only outcomes are `approve` or `reject`. If clarification is needed after that point, the approver rejects with a reason and the applicant restarts; the alternative is a queue that can churn indefinitely between reviewer and approver.
+
 ### Audit trail
 
 Three independent layers:
@@ -98,7 +103,7 @@ Content-addressed by sha256, one slot per document type, 5 MiB cap enforced in t
 
 - **State machine** in `shared/src/domain/state-machine.ts` — pure function, exhaustive on event tags. Same module on both sides.
 - **Illegal transitions → 409** at the API, never silently coerced. The service maps to `IllegalTransitionError`; `onError` returns `{ error: 'illegal_transition', from, event }`.
-- **Final decisions are permanent.** Terminal states are sinks in the SM, and a `BEFORE UPDATE` trigger on `applications` blocks any column change (except `updated_at`) when `OLD.status IN ('APPROVED','REJECTED','WITHDRAWN')`.
+- **Final decisions are permanent.** Terminal states are sinks in the SM, and a `BEFORE UPDATE` trigger on `applications` raises whenever `OLD.status IN ('APPROVED','REJECTED','WITHDRAWN')` — every column, including `updated_at`. Stricter than "freeze the decision fields"; the row is immutable end-to-end once the decision lands.
 - **Concurrent access.** Optimistic locking with a predicated `UPDATE … WHERE id = ? AND version = ? AND status = ?`. Zero rows → 409. Covered by `concurrent-transition.test.ts`: two `Promise.all`'d `mark_ready` calls produce exactly one 200, one 409, and one audit row.
 
 ### 3. Audit trail
@@ -124,12 +129,13 @@ Content-addressed by sha256, one slot per document type, 5 MiB cap enforced in t
 
 - **Role-aware UI.** The shared state-machine function decides which actions render — the UI literally cannot show a button the backend would reject.
 - **Loading / error / empty states.** SvelteKit `load` provides loading boundaries; errors map from the backend envelope to inline `<Alert>` or toast; empty lists render a deliberate empty state, not a blank panel.
-- **Honest about scope.** The login gate and scaffolding are in place; the full reviewer/approver views are the next iteration. The API at `/docs` exercises every workflow end-to-end today.
+- **End-to-end coverage.** `applications/[id]/+page.svelte` is the single workflow surface for every role: it imports the shared `transition()` function, walks `TRANSITION_EVENTS`, and renders only the buttons the backend would accept. A dual-control banner explains *why* approve/reject is hidden when the actor is the reviewer. `request_info` and the decision events have compose UIs (message / reason). Admin gets a dashboard (`/admin`) with totals, status breakdown, and live audit-chain verification; `/admin/audit` walks the chain; `/admin/users` manages role grants; `/admin/stuck` surfaces applications idle past an SLA.
 
 ## Trade-offs
 
-- **Conscious omissions.** S3 storage (swap `backend/src/storage/index.ts`), OAuth/MFA (better-auth supports both), per-test DB isolation (currently one shared testcontainer, serial), PII redaction in audit snapshots.
+- **Conscious omissions.** S3 storage (swap `backend/src/storage/index.ts`), OAuth/MFA (better-auth supports both), per-test DB isolation (currently one shared testcontainer, serial), PII redaction in audit snapshots, an applicant-facing notification channel for RFI events (today the applicant sees the note on next load).
 - **The Bun/Node password-hasher split.** `Bun.password` at runtime, scrypt in Vitest. The single ugliest concession — a unified hasher would close it.
-- **Frontend feature parity.** Login + scaffolding are wired; the reviewer/approver UIs aren't built out yet. Workflow is exercised via the API at `/docs`.
+- **Admin as break-glass.** The state-machine fallback lets an admin perform any transition. Dual control still fences the decision, so the worst-case is an audit row attributing an unusual action to a named admin — visible, not silent. A stricter model would forbid admins from acting as reviewer/approver entirely and require role-handoff.
+- **One shared test container, serial.** Cheaper than a per-test database; the audit hash chain and predicated UPDATE both serialise correctly, so cross-test bleed-through hasn't materialised. A per-test schema would be the next isolation step if the suite grows.
 
 If this were a team project I'd revisit the runtime choice (Bun is fast but still rough around some Node packages), and probably swap the disk-backed blob store for S3 from day one.
