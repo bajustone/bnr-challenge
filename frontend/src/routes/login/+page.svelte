@@ -1,33 +1,39 @@
 <script lang="ts">
+	import { enhance } from '$app/forms';
 	import { Button } from '$lib/components/ui/button';
 	import { Input } from '$lib/components/ui/input';
 	import { Label } from '$lib/components/ui/label';
 	import { Separator } from '$lib/components/ui/separator';
 	import * as Alert from '$lib/components/ui/alert';
 	import { toggleMode } from 'mode-watcher';
-	import { toast } from 'svelte-sonner';
 	import ShieldCheck from '@lucide/svelte/icons/shield-check';
 	import Sun from '@lucide/svelte/icons/sun';
 	import Moon from '@lucide/svelte/icons/moon';
 	import Info from '@lucide/svelte/icons/info';
+	import TriangleAlert from '@lucide/svelte/icons/triangle-alert';
 	import Loader2 from '@lucide/svelte/icons/loader-2';
 
-	let email = $state('');
-	let password = $state('');
+	let { form } = $props();
 	let submitting = $state(false);
 
-	async function onSubmit(event: SubmitEvent) {
-		event.preventDefault();
-		if (submitting) return;
-		submitting = true;
-		// No backend wiring yet — feature flag for the next phase.
-		// Simulate a round-trip so the loading state is visible.
-		await new Promise((r) => setTimeout(r, 600));
-		submitting = false;
-		toast.info('Auth is not wired yet.', {
-			description: 'The /auth/sign-in endpoint lands with backend phase 2 of the implementation plan.'
-		});
-	}
+	const errorCopy: Record<string, { title: string; description: string }> = {
+		missing_fields: {
+			title: 'Email and password are required',
+			description: 'Fill in both fields and try again.'
+		},
+		invalid_credentials: {
+			title: 'Wrong email or password',
+			description: 'Double-check the credentials. Accounts are provisioned by an administrator.'
+		},
+		backend_unreachable: {
+			title: 'The portal backend is unreachable',
+			description: 'Try again in a moment. If the problem persists, contact your BNR contact.'
+		},
+		unknown: {
+			title: 'Something went wrong',
+			description: 'Unexpected error while signing in. Please try again.'
+		}
+	};
 </script>
 
 <svelte:head>
@@ -98,16 +104,36 @@
 				</p>
 			</header>
 
-			<form class="space-y-4" onsubmit={onSubmit} novalidate>
+			{#if form?.error && errorCopy[form.error]}
+				<Alert.Root variant="destructive">
+					<TriangleAlert class="size-4" />
+					<Alert.Title>{errorCopy[form.error].title}</Alert.Title>
+					<Alert.Description>{errorCopy[form.error].description}</Alert.Description>
+				</Alert.Root>
+			{/if}
+
+			<form
+				class="space-y-4"
+				method="POST"
+				use:enhance={() => {
+					submitting = true;
+					return async ({ update }) => {
+						await update();
+						submitting = false;
+					};
+				}}
+				novalidate
+			>
 				<div class="space-y-2">
 					<Label for="email">Email</Label>
 					<Input
 						id="email"
+						name="email"
 						type="email"
 						autocomplete="username"
 						placeholder="you@example.org"
 						required
-						bind:value={email}
+						value={form?.email ?? ''}
 						disabled={submitting}
 					/>
 				</div>
@@ -125,10 +151,10 @@
 					</div>
 					<Input
 						id="password"
+						name="password"
 						type="password"
 						autocomplete="current-password"
 						required
-						bind:value={password}
 						disabled={submitting}
 					/>
 				</div>
@@ -155,7 +181,9 @@
 
 			<p class="text-muted-foreground text-center text-xs">
 				By signing in you agree to the portal's
-				<a class="hover:text-foreground underline underline-offset-4" href="/login">acceptable-use terms</a>.
+				<a class="hover:text-foreground underline underline-offset-4" href="/login"
+					>acceptable-use terms</a
+				>.
 			</p>
 		</div>
 	</main>
