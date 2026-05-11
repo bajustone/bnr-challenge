@@ -11,6 +11,7 @@ import { betterAuth, type BetterAuthOptions } from 'better-auth';
 import { drizzleAdapter } from 'better-auth/adapters/drizzle';
 
 import { db, schema } from '../db/index.ts';
+import { env } from '../env.ts';
 import { logger } from '../logger.ts';
 
 declare const Bun: { password: { hash: (s: string, opts: { algorithm: string }) => Promise<string>; verify: (s: string, hash: string) => Promise<boolean> } } | undefined;
@@ -33,6 +34,10 @@ const emailAndPassword: NonNullable<BetterAuthOptions['emailAndPassword']> = {
 export const auth = betterAuth({
   basePath: '/auth',
   baseURL: process.env.BETTER_AUTH_URL ?? `http://localhost:${process.env.PORT ?? '3001'}`,
+  // Mirrors the CORS allow-list — better-auth has its own CSRF guard
+  // (MISSING_OR_NULL_ORIGIN / INVALID_ORIGIN) separate from Hono's CORS
+  // middleware. Same source of truth for both.
+  trustedOrigins: env.ALLOWED_ORIGINS,
   database: drizzleAdapter(db, {
     provider: 'pg',
     schema: {
