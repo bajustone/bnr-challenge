@@ -12,7 +12,7 @@ The repo is split into a few folders, each with a clear job:
 - **`frontend/`** is the user interface. SvelteKit 2 with Svelte 5 runes, styled with Tailwind v4, and built on shadcn-svelte components. It's what applicants, reviewers, approvers, and admins actually see in their browser.
 - **`shared/`** is a small pure-TypeScript package — the state machine, the enums, the domain types. Both the backend and frontend import from it, so the rules of the workflow are defined in exactly one place.
 - **`docker/`** holds the Compose files that bring the whole thing up with a single command.
-- **`docs/`** has the design write-ups and architecture diagrams. If you only have time to look at two things, look at [`docs/diagrams/app-architecture.svg`](./docs/diagrams/app-architecture.svg) and [`docs/diagrams/db-architecture.svg`](./docs/diagrams/db-architecture.svg). They'll save you a lot of reading.
+- **`docs/`** has the design write-up and the architecture diagrams. If you only have time to look at two things, look at [`docs/diagrams/app-architecture.svg`](./docs/diagrams/app-architecture.svg) and [`docs/diagrams/db-architecture.svg`](./docs/diagrams/db-architecture.svg) — they'll save you a lot of reading. The full design rationale is in [`docs/design.md`](./docs/design.md).
 
 ## Before you start
 
@@ -176,15 +176,14 @@ The Compose overlay for dev hardcodes everything you need, so most of the time y
 
 ## Where to read more
 
-If you want the reasoning behind the choices, the `docs/` folder has more substantial write-ups:
+If you want the reasoning behind the choices, the `docs/` folder has a longer write-up and the diagrams:
 
 | File | What's in it |
 |------|--------------|
-| `docs/BNR Portal — architecture-thinking.html` | Why we picked the stack we did, and the trade-offs we made |
-| `docs/BNR Portal — db-architecture.html` | The schema, the invariants, and the three layers of audit defence |
-| `docs/BNR Portal — implementation plan.html` | The phase-by-phase build order and what's done so far |
-| `docs/diagrams/app-architecture.svg` | A picture of how a request flows through the system |
-| `docs/diagrams/db-architecture.svg` | A picture of the tables, foreign keys, and invariants |
+| [`docs/design.md`](./docs/design.md) | The full design document — stack choices and trade-offs, the schema and its invariants, the three-layer audit defence, the state machine, concurrency, security posture, and what we'd do differently |
+| [`docs/diagrams/app-architecture.svg`](./docs/diagrams/app-architecture.svg) | A picture of how a request flows through the system |
+| [`docs/diagrams/db-architecture.svg`](./docs/diagrams/db-architecture.svg) | A picture of the tables, foreign keys, and invariants |
+| `docs/Technical Challenge-Senior Software Engineer.pdf` | The original brief |
 
 ## Things we deliberately left out
 

@@ -2,7 +2,7 @@
 
 The API behind the BNR Licensing Portal. It runs on Bun, uses Hono as the HTTP framework, Drizzle for the database layer, better-auth for sessions, and talks to Postgres 17.
 
-If you want the *why* behind any of these choices, the design write-ups live in the `docs/` folder at the repo root: `BNR Portal — architecture-thinking.html` covers the stack, `BNR Portal — db-architecture.html` covers the schema, and `BNR Portal — implementation plan.html` walks through the build order phase by phase.
+If you want the *why* behind any of these choices, the design write-up lives at [`docs/design.md`](../docs/design.md) at the repo root. It covers the stack and trade-offs, the schema and its invariants, the three-layer audit defence, the state machine, concurrency, and what we'd do differently with more time.
 
 ## Getting started
 

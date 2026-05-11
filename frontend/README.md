@@ -161,4 +161,4 @@ docker compose -f ../docker/compose.yaml -f ../docker/compose.dev.yaml logs -f b
 
 ## What's coming
 
-Feature work follows the [backend phase order](../docs/BNR%20Portal%20%E2%80%94%20implementation%20plan.html). Each new screen pulls in only the shadcn-svelte primitives it actually needs — `dialog`, `sheet`, `table`, `form`, `select`, and so on.
+Feature work follows the phase order discussed in the [design document](../docs/design.md). Each new screen pulls in only the shadcn-svelte primitives it actually needs — `dialog`, `sheet`, `table`, `form`, `select`, and so on.
