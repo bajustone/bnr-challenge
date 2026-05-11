@@ -1,105 +1,112 @@
-import { Hono } from "hono";
-import { describeRoute, openAPIRouteHandler, resolver } from "hono-openapi";
-import { z } from "zod";
+/**
+ * Hono entrypoint. Chain: requestLogger → /auth/* (documented + catch-all)
+ * → domain routers (each wires its own session + requireAuth) → onError.
+ */
 
-import { logger } from "./logger.ts";
+import { Hono } from 'hono';
+import { ZodError } from 'zod';
+import { describeRoute, openAPIRouteHandler, resolver } from 'hono-openapi';
+import { z } from 'zod';
+
+import { auth } from './auth/index.ts';
+import { env } from './env.ts';
+import { AppError } from './errors.ts';
+import { logger } from './logger.ts';
 import {
   requestLogger,
   type RequestLoggerVariables,
-} from "./middleware/request-logger.ts";
-
-// Handlers return what these schemas describe; the same schemas feed the
-// OpenAPI spec via `resolver()`. One source of truth, no drift possible.
+} from './middleware/request-logger.ts';
+import { adminRoutes } from './routes/admin.ts';
+import { applicationsRoutes } from './routes/applications.ts';
+import { authRoutes } from './routes/auth.ts';
+import {
+  applicationDocumentsRoutes,
+  documentsRoutes,
+} from './routes/documents.ts';
+import { meRoutes } from './routes/me.ts';
+import { reviewNotesRoutes } from './routes/review-notes.ts';
+import { ErrorBodySchema } from './routes/schemas.ts';
+import { initStorage } from './storage/index.ts';
 
 const RootResponse = z
-  .object({
-    ok: z.literal(true),
-    service: z.literal("bnr-backend"),
-  })
-  .meta({
-    id: "RootResponse",
-    description: "Service identity payload.",
-  });
+  .object({ ok: z.literal(true), service: z.literal('bnr-backend') })
+  .meta({ id: 'RootResponse' });
 
 const HealthResponse = z
-  .object({
-    status: z.literal("ok"),
-    timestamp: z.iso.datetime().meta({
-      description: "Server clock at the moment of the response (RFC 3339).",
-    }),
-  })
-  .meta({
-    id: "HealthResponse",
-    description: "Liveness probe. Does not touch the database.",
-  });
+  .object({ status: z.literal('ok'), timestamp: z.iso.datetime() })
+  .meta({ id: 'HealthResponse' });
 
-export const app = new Hono<{ Variables: RequestLoggerVariables }>();
+type Vars = RequestLoggerVariables;
 
-// First in the chain so c.var.log is available to every subsequent handler.
-app.use("*", requestLogger);
+export const app = new Hono<{ Variables: Vars }>();
+
+app.use('*', requestLogger);
+
+// Documented wrappers first — the more-specific routes take precedence,
+// any other /auth/* path falls through to better-auth.
+app.route('/auth', authRoutes);
+app.on(['GET', 'POST'], '/auth/*', (c) => auth.handler(c.req.raw));
 
 app.get(
-  "/",
+  '/',
   describeRoute({
-    summary: "Service identity",
-    description:
-      'Returns the service name. Used by upstream load balancers as a cheap "are you the right service" check.',
-    tags: ["meta"],
+    summary: 'Service identity',
+    tags: ['meta'],
     responses: {
       200: {
-        description: "Identity payload.",
-        content: {
-          "application/json": { schema: resolver(RootResponse) },
-        },
+        description: 'Identity payload',
+        content: { 'application/json': { schema: resolver(RootResponse) } },
       },
     },
   }),
-  (c) => c.json({ ok: true as const, service: "bnr-backend" as const }),
+  (c) => c.json({ ok: true as const, service: 'bnr-backend' as const }),
 );
 
 app.get(
-  "/health",
+  '/health',
   describeRoute({
-    summary: "Liveness check",
-    description:
-      "Returns 200 if the process is running. Deliberately does not check the database — DB checks belong on a separate readiness endpoint so a transient DB blip does not get the process killed by an orchestrator.",
-    tags: ["meta"],
+    summary: 'Liveness',
+    tags: ['meta'],
     responses: {
       200: {
-        description: "Process is live.",
-        content: {
-          "application/json": { schema: resolver(HealthResponse) },
-        },
+        description: 'Live',
+        content: { 'application/json': { schema: resolver(HealthResponse) } },
       },
     },
   }),
-  (c) =>
-    c.json({
-      status: "ok" as const,
-      timestamp: new Date().toISOString(),
-    }),
+  (c) => c.json({ status: 'ok' as const, timestamp: new Date().toISOString() }),
 );
 
+app.route('/me', meRoutes);
+app.route('/applications', applicationsRoutes);
+app.route('/applications', applicationDocumentsRoutes);
+app.route('/applications', reviewNotesRoutes);
+app.route('/documents', documentsRoutes);
+app.route('/admin', adminRoutes);
+
 app.get(
-  "/openapi.json",
+  '/openapi.json',
   openAPIRouteHandler(app, {
     documentation: {
       info: {
-        title: "BNR Licensing Portal API",
-        version: "0.0.1",
+        title: 'BNR Licensing Portal API',
+        version: '0.0.1',
         description:
-          "Backend for the Bank Licensing & Compliance Portal. Spec is generated from the same Zod schemas the handlers use, so drift is impossible at the response-shape level.",
+          'Backend for the Bank Licensing & Compliance Portal. Spec generated from the Zod schemas the handlers actually use.',
       },
       tags: [
-        { name: "meta", description: "Service identity and health probes." },
+        { name: 'meta', description: 'Identity + health' },
+        { name: 'auth', description: 'Sign-up / sign-in / sign-out / session' },
+        { name: 'applications', description: 'Application workflow' },
+        { name: 'documents', description: 'Document upload + download' },
+        { name: 'review-notes', description: 'Reviewer commentary + RFI messages' },
+        { name: 'admin', description: 'Role grants + audit verification' },
       ],
-      servers: [{ url: "http://localhost:3001", description: "Local dev" }],
+      servers: [{ url: 'http://localhost:3001', description: 'Local dev' }],
     },
   }),
 );
 
-// Scalar via CDN avoids the @scalar/hono-api-reference adapter — same UI,
-// one fewer dep, no version coupling.
 const DOCS_HTML = `<!doctype html>
 <html>
   <head>
@@ -113,9 +120,42 @@ const DOCS_HTML = `<!doctype html>
   </body>
 </html>`;
 
-app.get("/docs", (c) => c.html(DOCS_HTML));
+app.get('/docs', (c) => c.html(DOCS_HTML));
 
-const port = Number(process.env.PORT ?? 3001);
+app.onError((err, c) => {
+  const requestId = c.var.requestId;
+  const log = c.var.log ?? logger;
+
+  if (err instanceof AppError) {
+    if (err.status >= 500) log.error({ err, status: err.status }, 'app error 5xx');
+    else log.warn({ status: err.status, code: err.code }, 'app error');
+    return c.json(err.toBody(requestId), err.status);
+  }
+
+  if (err instanceof ZodError) {
+    const issues = err.issues.map((i) => ({ path: i.path, message: i.message }));
+    log.warn({ issues }, 'validation error');
+    return c.json(
+      { error: 'invalid', requestId, issues } satisfies z.infer<typeof ErrorBodySchema>,
+      422,
+    );
+  }
+
+  // hono/standard-validator throws an HTTPException-ish object.
+  const anyErr = err as { status?: number; message?: string; cause?: unknown };
+  if (typeof anyErr.status === 'number' && anyErr.status >= 400 && anyErr.status < 500) {
+    log.warn({ status: anyErr.status, message: anyErr.message }, 'http error');
+    return c.json(
+      { error: 'invalid', requestId, message: anyErr.message } as Record<string, unknown>,
+      anyErr.status as 400 | 401 | 403 | 404 | 409 | 413 | 415 | 422,
+    );
+  }
+
+  log.error({ err }, 'unhandled error');
+  return c.json({ error: 'internal', requestId }, 500);
+});
+
+const port = env.PORT;
 
 export default {
   port,
@@ -123,8 +163,9 @@ export default {
 };
 
 if (import.meta.main) {
+  await initStorage();
   logger.info(
-    { port, url: `http://localhost:${port}` },
-    "bnr-backend listening",
+    { port, url: `http://localhost:${port}`, storage: env.STORAGE_DIR },
+    'bnr-backend listening',
   );
 }
