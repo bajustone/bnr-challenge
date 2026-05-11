@@ -18,6 +18,10 @@ const EnvSchema = z.object({
   LOG_LEVEL: z
     .enum(['fatal', 'error', 'warn', 'info', 'debug', 'trace', 'silent'])
     .optional(),
+  /** Mount point for uploaded document blobs. See implementation-plan §3. */
+  STORAGE_DIR: z.string().min(1).default('./storage'),
+  /** Hard ceiling on individual document size (bytes). 5 MiB per brief. */
+  MAX_DOCUMENT_BYTES: z.coerce.number().int().positive().default(5 * 1024 * 1024),
 });
 
 export type Env = z.infer<typeof EnvSchema>;

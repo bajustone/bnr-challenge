@@ -20,3 +20,5 @@ services:
 
 volumes:
   pg_data:
+  # Uploaded document blobs. Survives `compose down`; wiped only by `down -v`.
+  bnr_storage:

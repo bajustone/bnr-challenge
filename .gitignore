@@ -7,3 +7,5 @@ node_modules/
 dist/
 build/
 .svelte-kit/
+/storage/
+backend/storage/

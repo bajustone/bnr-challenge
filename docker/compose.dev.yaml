@@ -27,12 +27,14 @@ services:
       - ..:/workspace:cached
       - workspace_node_modules:/workspace/node_modules
       - backend_node_modules:/workspace/backend/node_modules
+      - bnr_storage:/var/lib/bnr/storage
     environment:
       PORT: "3001"
       # Dev uses the owner connection for both; staging/prod split them.
       DATABASE_URL: postgres://app_owner:app_owner_pw@postgres:5432/bnr
       DATABASE_OWNER_URL: postgres://app_owner:app_owner_pw@postgres:5432/bnr
       AUDIT_HASH_SECRET: dev-audit-secret-not-for-production
+      STORAGE_DIR: /var/lib/bnr/storage
     ports:
       - "${BACKEND_HOST_PORT:-3001}:3001"
     depends_on:
