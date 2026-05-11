@@ -11,6 +11,7 @@ import { betterAuth, type BetterAuthOptions } from 'better-auth';
 import { drizzleAdapter } from 'better-auth/adapters/drizzle';
 
 import { db, schema } from '../db/index.ts';
+import { logger } from '../logger.ts';
 
 declare const Bun: { password: { hash: (s: string, opts: { algorithm: string }) => Promise<string>; verify: (s: string, hash: string) => Promise<boolean> } } | undefined;
 const hasBun = typeof Bun !== 'undefined' && typeof Bun.password?.hash === 'function';
@@ -42,6 +43,25 @@ export const auth = betterAuth({
     },
   }),
   emailAndPassword,
+  // Every self-signed-up user is an applicant. Staff roles are granted by an
+  // existing admin via POST /admin/users/:id/roles (audited).
+  databaseHooks: {
+    user: {
+      create: {
+        async after(user) {
+          try {
+            await db
+              .insert(schema.userRoles)
+              .values({ userId: user.id, role: 'applicant', grantedBy: user.id })
+              .onConflictDoNothing();
+          } catch (err) {
+            logger.error({ err, userId: user.id }, 'failed to auto-grant applicant role');
+            throw err;
+          }
+        },
+      },
+    },
+  },
   advanced: {
     database: {
       generateId: () => randomUUID(),
